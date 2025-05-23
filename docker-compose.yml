@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - loki
+
+  openwebui2loki:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./datas:/app/datas
+    environment:
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+      - DB_PATH=/app/datas/webui.db
+      - AUDIT_LOG_PATH=/app/datas/audit.log
+      - INTERVAL=60
+      - BATCH_SIZE=100
+    depends_on:
+      - loki
+
+volumes:
+  loki-data:
+  grafana-data:
